@@ -40,27 +40,43 @@ const SubjectRow = ({ subject, setSubjects, available }) => {
   const status = getStatus(grades);
 
   const handleGradeChange = (field, value) => {
-    const parsedValue = parseFloat(value);
-
-    // Validar que el valor es un número entre 0 y 10
-    if (isNaN(parsedValue) || parsedValue < 0 || parsedValue > 10) {
-      return;
-    }
-
-    const newGrades = { ...grades, [field]: parsedValue };
-
-    setGrades(newGrades);
-
-    setSubjects((prevSubjects) => {
-      const updatedSubjects = prevSubjects.map((subj) => {
-        if (subj.id === subject.id) {
-          return { ...subj, grades: newGrades };
-        }
-        return subj;
+    if (value === "") {
+      const newGrades = { ...grades, [field]: null };
+  
+      setGrades(newGrades);
+  
+      setSubjects((prevSubjects) => {
+        const updatedSubjects = prevSubjects.map((subj) => {
+          if (subj.id === subject.id) {
+            return { ...subj, grades: newGrades };
+          }
+          return subj;
+        });
+        return updatedSubjects;
       });
-      return updatedSubjects;
-    });
-  };
+    } else {
+      const parsedValue = parseFloat(value);
+  
+      // Validar que el valor es un número entre 0 y 10
+      if (isNaN(parsedValue) || parsedValue < 0 || parsedValue > 10) {
+        return;
+      }
+  
+      const newGrades = { ...grades, [field]: parsedValue };
+  
+      setGrades(newGrades);
+  
+      setSubjects((prevSubjects) => {
+        const updatedSubjects = prevSubjects.map((subj) => {
+          if (subj.id === subject.id) {
+            return { ...subj, grades: newGrades };
+          }
+          return subj;
+        });
+        return updatedSubjects;
+      });
+    }
+  };  
 
   const inputClassName = (disabled) =>
     `block w-full p-2 border rounded-lg text-xs focus:ring-blue-500 focus:border-blue-500 ${
@@ -91,31 +107,32 @@ const SubjectRow = ({ subject, setSubjects, available }) => {
       <td className="px-6 py-4">{subject.category}</td>
       <td className="px-6 py-4">{subject.prerequisites}</td>
       <td className="px-6 py-4">
-        <input
-          type="number"
-          min="0"
-          max="10"
-          step="0.1"
-          className={inputClassName(!available)}
-          value={grades.first_term_grade || ""}
-          onChange={(e) =>
-            handleGradeChange("first_term_grade", e.target.value)
-          }
-          disabled={!available}
-        />
+      <input
+        type="number"
+        min="0"
+        max="10"
+        step="1"
+        className={inputClassName(!available)}
+        value={grades.first_term_grade || ""}
+        onChange={(e) => handleGradeChange("first_term_grade", e.target.value)}
+        disabled={!available}
+        placeholder="Nota"
+      />
+
       </td>
       <td className="px-6 py-4">
         <input
           type="number"
           min="0"
           max="10"
-          step="0.1"
+          step="1"
           className={inputClassName(!available)}
           value={grades.second_term_grade || ""}
           onChange={(e) =>
             handleGradeChange("second_term_grade", e.target.value)
           }
           disabled={!available}
+          placeholder="Nota"
         />
       </td>
       <td className="px-6 py-4">
@@ -123,7 +140,7 @@ const SubjectRow = ({ subject, setSubjects, available }) => {
           type="number"
           min="0"
           max="10"
-          step="0.1"
+          step="1"
           className={inputClassName(
             !available || (status !== "Cursada" && status !== "Aprobada")
           )}
@@ -132,6 +149,7 @@ const SubjectRow = ({ subject, setSubjects, available }) => {
           disabled={
             !available || (status !== "Cursada" && status !== "Aprobada")
           }
+          placeholder="Nota"
         />
       </td>
       <td className="px-6 py-4">{getStatusBadge(status)}</td>

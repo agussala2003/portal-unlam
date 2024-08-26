@@ -1,17 +1,14 @@
-import PropTypes from 'prop-types';
+import { useParams } from 'react-router-dom';
 import SingleCareer from '../components/SingleCareer';
 
-const CareerPage = ({ id }) => {
+const CareerPage = () => {
+  const { careerId } = useParams(); // Extrae el parámetro de la URL
+
   return (
     <div>
-      <SingleCareer careerId={id} />
+      <SingleCareer careerId={careerId} />
     </div>
   );
-};
-
-// Definición de PropTypes para CareerPage
-CareerPage.propTypes = {
-  id: PropTypes.string.isRequired, // Cambia a PropTypes.number si id es un número
 };
 
 export default CareerPage;

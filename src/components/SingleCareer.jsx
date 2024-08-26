@@ -2,10 +2,12 @@ import { useEffect, useState } from "react";
 import PropTypes from "prop-types";
 import { supabase } from "../../utils/supabase";
 import SubjectRow from "./SubjectRow";
+import Loader from "./Loader";
+import ErrorMessage from "./ErrorMessage";
 
 const SingleCareer = ({ careerId }) => {
+  const [careerName, setCareerName] = useState("");
   const [subjects, setSubjects] = useState([]);
-  const [grades, setGrades] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentYear, setCurrentYear] = useState(1);
@@ -14,11 +16,38 @@ const SingleCareer = ({ careerId }) => {
   useEffect(() => {
     const fetchUserId = async () => {
       const user = await supabase.auth.getUser();
-      setUserId(user.data.user.id);
+      if (user.error) {
+        setError("Debes tener cuenta para registrar tu progreso.");
+      } else {
+        setUserId(user.data.user.id);
+      }
     };
 
     fetchUserId();
   }, []);
+
+  useEffect(() => {
+    const fetchCareerName = async () => {
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from("careers")
+          .select("name")
+          .eq("id", careerId)
+          .single();
+
+        if (error) throw error;
+
+        setCareerName(data.name);
+      } catch (error) {
+        setError(error.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCareerName();
+  }, [careerId]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -58,9 +87,12 @@ const SingleCareer = ({ careerId }) => {
 
             if (prereqError) throw prereqError;
 
-            const prerequisitesMet = prerequisites.every(
-              (p) => gradesMap[p.prerequisite_id]?.final_grade >= 6
-            );
+            const prerequisitesMet = prerequisites.every((p) => {
+              const grade = gradesMap[p.prerequisite_id];
+              return grade &&
+                grade.first_term_grade >= 4 &&
+                grade.second_term_grade >= 4;
+            });
 
             return {
               ...subject,
@@ -78,7 +110,6 @@ const SingleCareer = ({ careerId }) => {
         );
 
         setSubjects(subjectsWithPrerequisites);
-        setGrades(gradesMap);
       } catch (error) {
         setError(error.message);
       } finally {
@@ -102,7 +133,7 @@ const SingleCareer = ({ careerId }) => {
       });
 
       await supabase.from("student_grades").upsert(updatedGrades);
-
+      window.location.reload();
       alert("Cambios guardados con éxito");
     } catch (error) {
       alert("Error al guardar los cambios: " + error.message);
@@ -120,8 +151,17 @@ const SingleCareer = ({ careerId }) => {
     setCurrentYear(year);
   };
 
-  if (loading) return <p>Cargando...</p>;
-  if (error) return <p>Error: {error}</p>;
+  if (error) {
+    return (
+      <ErrorMessage error={error} />
+    );
+  }
+  if (loading) {
+    return (
+      <Loader />
+    );
+  }
+
 
   const currentSubjects = groupedSubjects[currentYear] || { 1: [], 2: [] };
 
@@ -129,11 +169,11 @@ const SingleCareer = ({ careerId }) => {
     <div className="w-11/12 mx-auto py-10">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-2xl font-semibold">
-          Materias para la Carrera ID: {careerId}
+          Materias de {careerName}
         </h2>
         <button
           onClick={handleSaveChanges}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
         >
           Guardar Cambios
         </button>
@@ -145,11 +185,10 @@ const SingleCareer = ({ careerId }) => {
             key={year}
             onClick={() => handleYearChange(parseInt(year))}
             className={`px-4 py-2 rounded hover:bg-opacity-80 transition-colors
-        ${
-          parseInt(year) === currentYear
-            ? "bg-blue-600 text-white dark:bg-blue-500 dark:hover:bg-blue-400"
-            : "bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
-        }`}
+        ${parseInt(year) === currentYear
+                ? "bg-green-600 text-white dark:bg-green-500 dark:hover:bg-green-400"
+                : "bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+              }`}
           >
             Año {year}
           </button>
